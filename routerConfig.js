@@ -231,5 +231,15 @@ module.exports = [
         path: "/api/me",
         handler: mainController.updateMyProfile,
         secured: 'user'
-    }
+    },
+    {
+        method: "get",
+        path: "/api/wechat",
+        handler: authController.checkSignature
+    },
+    {
+        method: "post",
+        path: "/api/wechat",
+        handler: authController.wechatCallback
+    },
 ];

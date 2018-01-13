@@ -112,5 +112,14 @@ module.exports = {
             res.send({ret: 1, message: err.message});
         });
         return next();
+    },
+    checkSignature: function (req, res, next) {
+        res.end(req.query.echostr);
+        return next();
+    },
+    wechatCallback: function (req, res, next) {
+        return next();
     }
+
+
 }
