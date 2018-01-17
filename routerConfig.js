@@ -210,6 +210,12 @@ module.exports = [
     },
     {
         method: "post",
+        path: "/api/projects/:id/:type/groups",
+        handler: mainController.changeGroupName,
+        secured: 'user'
+    },
+    {
+        method: "post",
         path: "/api/privateMessages",
         handler: mainController.sendPrivateMessage,
         secured: 'user'
@@ -227,11 +233,18 @@ module.exports = [
         secured: 'user'
     },
     {
+        method: "get",
+        path: "/api/me/projectsLikers",
+        handler: mainController.getMyLikersForProjects,
+        secured: 'user'
+    },
+    {
         method: "put",
         path: "/api/me",
         handler: mainController.updateMyProfile,
         secured: 'user'
     },
+
     {
         method: "get",
         path: "/api/wechat",
@@ -242,4 +255,22 @@ module.exports = [
         path: "/api/wechat",
         handler: authController.wechatCallback
     },
+    {
+        method: "get",
+        path: "/api/followings",
+        handler: mainController.getFollowings,
+        secured: 'user'
+    },
+    {
+        method: "get",
+        path: "/api/followers",
+        handler: mainController.getFollowers,
+        secured: 'user'
+    },
+    {
+        method: "del",
+        path: "/api/projects/:id/:type/groups/:name",
+        handler: mainController.removeGroup,
+        secured: 'user'
+    }
 ];

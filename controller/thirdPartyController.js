@@ -11,7 +11,7 @@ var moment = require('moment');
 module.exports = {
     sendSMS: function (req, res, next) {
         var smsConfig = config.sms;
-        var code = _.random(10000, 99999);
+        var code = '11111';//_.random(10000, 99999);
         var content = smsConfig.template.replace(':code', code);
         var option = {mobile: req.params.mobile, text: content, apikey: config.sms.apikey};
         request.postAsync({url: smsConfig.providerUrl, form: option}).then(function (response, body) {
@@ -27,9 +27,9 @@ module.exports = {
     },
 
     getQiniuToken: function (req, res, next) {
-        qiniu.conf.ACCESS_KEY = '0d02DpW7tBPiN3TuZYV7WcxmN1C9aCiNZeW9fp5W';
-        qiniu.conf.SECRET_KEY = '7zD3aC6xpvp_DfDZ0LJhjMq6n6nB6UVDbl37C5FZ';
-        var bucket = 'hisforce';
+        qiniu.conf.ACCESS_KEY = '2o5fzSm6cGtcODHKrIa7v6sHt4qsyPWD6zbr9l_6';
+        qiniu.conf.SECRET_KEY = 'uc7X1HM4pdN0vUsKFy3g8gw91LuFMlDd2A_qp4mP';
+        var bucket = 'xiangmulai';
         var putPolicy = new qiniu.rs.PutPolicy(bucket);
         putPolicy.expires = 3600;
         res.send({

@@ -4,15 +4,16 @@ module.exports = {
         insert: 'insert user set ?',
         findById: 'select * from user where id = ?',
         update: 'update user set ? where id = ?',
-        updateByName: 'update user set ? where name = ?'
+        updateByName: 'update user set ? where name = ?',
+        findByIds: 'select id, nickName, headPic,signature, createDate from user where id in (?)'
     },
     project: {
         findCategories: 'select id, name, pid from projectCategory limit ? ,?',
-        findBusinessInfo: 'select * FROM projectBusinessInfo where pid = ?',
-        findTeamStrengths: 'select * FROM projectTeamStrength where pid = ?',
+        findBusinessInfo: 'select id, title, shortDesc,`desc`, image, video,`group`,`type`, sortIndex FROM projectBusinessInfo where pid = ? order by sortIndex',
+        findTeamStrengths: 'select id, content,`group`, sortIndex, image FROM projectTeamStrength where pid = ? order by sortIndex',
         findById: 'select * from project where id = ?',
-        findMemberInfo: 'select * FROM projectMemberInfo where pid = ?',
-        findLikers: 'select id,uid,nickName, createDate from projectLiker where pid = ?',
+        findMemberInfo: 'select id, `name`, image, position, email,createDate, `desc`,`group`, headPic, sortIndex FROM projectMemberInfo where pid = ? order by sortIndex',
+        findLikers: 'select id,uid,nickName,headPic, createDate from projectLiker where pid = ?',
         findTags: 'select id, name from tag limit ?, ?',
         findByCreator: 'select * from project where creator = ? limit ?, ?',
         findMusicLib: 'select * from musicLib ',
@@ -37,9 +38,10 @@ module.exports = {
         updateBusinessInfo: 'update projectBusinessInfo set ? where id = ?',
         deleteBusinessInfo: 'delete from projectBusinessInfo where id = ?',
         insertTeamStrength: 'insert projectTeamStrength set ?',
+        findLikersByUid: 'select headPic, nickName, pid, pName as projectName, createDate from projectLiker l where pid in (select id from project p where creator = ? ) order by createDate desc limit ?,?',
         updateTeamStrength: 'update projectTeamStrength set ? where id = ?',
         deleteTeamStrength: 'delete from projectTeamStrength where id = ?',
         findComments: 'select id, nickName, headPic, content, createDate from projectComment where pid=? order by createDate desc limit ?, ?',
-        findCommentProjectBy: 'select c.id, c.content,c.createDate, p.`name`, p.creator, p.creatorName, p.shortDesc, p.`desc`, p.logo from projectComment c left JOIN project p on p.id = c.pid where c.uid = ? '
+        findCommentProjectBy: 'select c.id, c.content,c.createDate, p.`name`, p.creator, p.creatorNickName,p.creatorHeadPic, p.shortDesc, p.`desc`, p.logo from projectComment c left JOIN project p on p.id = c.pid where c.uid = ? '
     }
 }

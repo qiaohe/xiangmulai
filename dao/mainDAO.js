@@ -9,6 +9,15 @@ module.exports = {
     insertProject: function (project) {
         return db.query(sqlMapping.project.insert, project);
     },
+    findLikersForProjects: function (uid, page) {
+        return db.query(sqlMapping.project.findLikersByUid, [uid, +page.from, +page.size]);
+
+    },
+    findUsersByIds: function (idList) {
+        var sql = sqlMapping.user.findByIds.replace(/\?/g, idList);
+        return db.query(sql);
+    },
+
     findUserById: function (uid) {
         return db.query(sqlMapping.user.findById, uid);
     },
@@ -90,7 +99,6 @@ module.exports = {
     },
     findTeamStrengths: function (pid) {
         return db.query(sqlMapping.project.findTeamStrengths, pid);
-
     },
 
     addProjectLiker: function (liker) {
@@ -122,6 +130,7 @@ module.exports = {
     },
     findProject: function (pid) {
         return db.query(sqlMapping.project.findById, pid);
+        //select id, `name`, image, position, email,createDate, `desc`,`group`, headPic, sortIndex FROM projectMemberInfo where pid = ? order by sortIndex
     },
     findProjectMemberInfo: function (pid) {
         return db.query(sqlMapping.project.findMemberInfo, pid);
@@ -134,6 +143,13 @@ module.exports = {
     },
     insertPrivateMessage: function (m) {
         return db.query(sqlMapping.project.insertPrivateMessage, m);
-
+    },
+    updateGroupName: function (projectId, tableName, group, newGroup) {
+        var sql = 'update ' + tableName + ' set `group` =\'' + newGroup + '\' where pid=' + projectId + ' and `group` = \'' + group + '\'';
+        return db.query(sql);
+    },
+    deleteGroup: function (projectId, tableName, group) {
+        var sql = 'delete from ' + tableName + ' where pid=' + projectId + ' and `group` = \'' + group + '\'';
+        return db.query(sql);
     }
 }

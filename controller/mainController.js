@@ -7,6 +7,21 @@ const moment = require('moment');
 const Promise = require('bluebird');
 const i18n = require('../i18n/localeMessage');
 const md5 = require('md5');
+function translateDate(array) {
+    var data = _.groupBy(array, 'group');
+    var result = [];
+    for (var key in data) {
+        result.push({
+            group: key,
+            type: data[key][0].hasOwnProperty('type') ? data[key][0].type : null,
+            data: _.map(data[key], function (item) {
+                delete item.group;
+                return item;
+            })
+        })
+    }
+    return result;
+}
 function createTree(node, categories) {
     var items = _.filter(categories, function (item) {
         return item.pid == (node == null ? -1 : node.id);
@@ -55,7 +70,12 @@ module.exports = {
     },
 
     addProject: function (req, res, next) {
-        var p = _.assign(req.body, {createDate: new Date(), creator: req.user.id, creatorName: req.user.name});
+        var p = _.assign(req.body, {
+            createDate: new Date(),
+            creator: req.user.id,
+            creatorNickName: req.user.nickName,
+            creatorHeadPic: req.user.headPic
+        });
         if (p.tags && _.isArray(p.tags)) p.tags = p.tags.join(',');
         mainDAO.insertProject(p).then(function (result) {
             p.id = result.insertId;
@@ -206,12 +226,15 @@ module.exports = {
         mainDAO.findProjectLikersBy(+req.params.id, +req.user.id).then(function (likers) {
             liked = likers && likers.length > 0;
             if (liked) return mainDAO.deleteProjectLiker(+req.params.id, +req.user.id);
-            return mainDAO.addProjectLiker({
-                pid: +req.params.id,
-                uid: req.user.id,
-                createDate: new Date(),
-                nickName: req.user.nickName,
-                headPic: req.user.headPic
+            mainDAO.findProject(+req.params.id).then(function (projects) {
+                return mainDAO.addProjectLiker({
+                    pid: +req.params.id,
+                    uid: req.user.id,
+                    createDate: new Date(),
+                    nickName: req.user.nickName,
+                    headPic: req.user.headPic,
+                    pName: projects[0].name
+                });
             });
         }).then(function (result) {
             return mainDAO.updateByDescField({id: +req.params.id}, 'likerCount', liked ? -1 : 1);
@@ -220,6 +243,16 @@ module.exports = {
         }).catch(function (err) {
             res.send({ret: 1, data: err.message});
         });
+        return next();
+    },
+    getMyLikersForProjects: function (req, res, next) {
+        mainDAO.findLikersForProjects(+req.user.id, {
+            from: req.query.from,
+            size: req.query.size
+        }).then(function (likers) {
+            if (likers && likers.length < 1) return res.send({ret: 0, data: []});
+            res.send({ret: 0, data: likers});
+        })
         return next();
     },
     commentProject: function (req, res, next) {
@@ -257,6 +290,9 @@ module.exports = {
                     if (project.tags) project.tags = project.tags.split(',');
                     return mainDAO.findProjectLikers(+project.id);
                 }).then(function (likers) {
+                    project.hasLiked = (_.findIndex(likers, function (liker) {
+                        return +liker.uid == req.user.id;
+                    }) > -1);
                     project.likers = likers;
                 });
             }).then(function (result) {
@@ -270,9 +306,10 @@ module.exports = {
     followingFriend: function (req, res, next) {
         var uid = req.user.id;
         redis.zrankAsync(['uid:' + uid + ':following', req.params.id]).then(function (rank) {
+            var d = new Date().getTime();
             if (rank == null) {
-                redis.zadd('uid:' + uid + ':following', req.params.id);
-                redis.zadd('uid:' + req.params.id + ':follower', uid);
+                redis.zadd(['uid:' + uid + ':following', d, req.params.id]);
+                redis.zadd(['uid:' + req.params.id + ':follower', d, uid]);
             } else {
                 redis.zrem('uid:' + uid + ':following', req.params.id);
                 redis.zrem('uid:' + req.params.id + ':follower', uid);
@@ -286,12 +323,12 @@ module.exports = {
 
     getUserInfo: function (req, res, next) {
         var user = req.user;
-        mainDAO.findUserById(user.id).then(function (users) {
+        mainDAO.findUserById(+req.params.id).then(function (users) {
             if (users && users.length < 1) throw new Error('当前登录用户不存在。');
             user = users[0];
             return redis.zcardAsync('uid:' + req.params.id + ':following')
         }).then(function (followingCount) {
-            user.followingCount = followingCount ? followerCount : 0;
+            user.followingCount = followingCount ? followingCount : 0;
             return redis.zcardAsync('uid:' + req.params.id + ':follower');
         }).then(function (followerCount) {
             user.followCount = followerCount ? followerCount : 0;
@@ -357,13 +394,13 @@ module.exports = {
             if (p.tags) p.tags = p.tags.split(',');
             return mainDAO.findProjectMemberInfo(p.id);
         }).then(function (memberInfo) {
-            p.memberInfo = memberInfo.length > 0 ? memberInfo : null;
+            p.memberInfo = memberInfo.length > 0 ? translateDate(memberInfo) : [];
             return mainDAO.findProjectBusinessInfo(p.id);
         }).then(function (businessInfo) {
-            p.businessInfo = businessInfo.length > 0 ? businessInfo : null;
+            p.businessInfo = businessInfo.length > 0 ? translateDate(businessInfo) : [];
             return mainDAO.findTeamStrengths(p.id);
         }).then(function (teamStrengths) {
-            p.teamStrengths = teamStrengths;
+            p.teamStrengths = teamStrengths.length > 0 ? translateDate(teamStrengths) : [];
             return mainDAO.findProjectComments(p.id, {from: 0, size: 6});
         }).then(function (comments) {
             p.comments = comments;
@@ -445,5 +482,61 @@ module.exports = {
             res.send({ret: 1, message: err.message});
         });
         return next();
+    },
+    changeGroupName: function (req, res, next) {
+        mainDAO.updateGroupName(req.params.id, 'project' + _.capitalize(req.params.type), req.body.group, req.body.newGroup).then(function (result) {
+            res.send({ret: 0, message: '更新成功。'});
+        }).catch(function (err) {
+            res.send({ret: 1, message: err.message});
+        });
+        return next();
+    },
+    getFollowings: function (req, res, next) {
+        var uid = +req.user.id;
+        var from = +req.query.from;
+        var to = +req.query.from + (+req.query.size) - 1;
+        redis.zrangeAsync(['uid:' + uid + ':following', from, to]).then(function (userIdList) {
+            if (userIdList && userIdList.length < 1) return res.send({ret: 0, data: []});
+            return mainDAO.findUsersByIds(userIdList.join(','));
+        }).then(function (users) {
+            Promise.map(users, function (user) {
+                return redis.zrankAsync(['uid:' + user.id + ':following', uid]).then(function (result) {
+                    user.ifFollowingEachOther = (result != null);
+                })
+            }).then(function (result) {
+                res.send({ret: 0, data: users});
+            })
+        }).catch(function (err) {
+            res.send({ret: 1, message: err.message});
+        });
+        return next();
+    },
+    getFollowers: function (req, res, next) {
+        var uid = +req.user.id;
+        var from = +req.query.from;
+        var to = +req.query.from + (+req.query.size) - 1;
+        redis.zrangeAsync(['uid:' + uid + ':follower', from, to]).then(function (userIdList) {
+            if (userIdList && userIdList.length < 1) return res.send({ret: 0, data: []});
+            return mainDAO.findUsersByIds(userIdList.join(','));
+        }).then(function (users) {
+            Promise.map(users, function (user) {
+                return redis.zrankAsync(['uid:' + uid + ':following', user.id]).then(function (result) {
+                    user.hasFollowing = (result != null);
+                })
+            });
+            res.send({ret: 0, data: users});
+        }).catch(function (err) {
+            res.send({ret: 1, message: err.message});
+        });
+        return next();
+    },
+    removeGroup: function (req, res, next) {
+        mainDAO.deleteGroup(+req.params.id, 'project' + _.capitalize(req.params.type), req.params.name).then(function (result) {
+            res.send({ret: 0, message: '删除组信息成功。'})
+        }).catch(function (err) {
+            res.send({ret: 1, message: err.message});
+        });
+        return next();
     }
+
 }
