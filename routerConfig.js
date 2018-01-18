@@ -244,7 +244,6 @@ module.exports = [
         handler: mainController.updateMyProfile,
         secured: 'user'
     },
-
     {
         method: "get",
         path: "/api/wechat",
@@ -272,5 +271,17 @@ module.exports = [
         path: "/api/projects/:id/:type/groups/:name",
         handler: mainController.removeGroup,
         secured: 'user'
-    }
+    },
+    {
+        method: "get",
+        path: "/api/visitSummary",
+        handler: mainController.getVisitSummary,
+        secured: 'user'
+    },
+    {
+        method: "get",
+        path: "/api/projectFollowers",
+        handler: mainController.getProjectFollowers,
+        secured: 'user'
+    },
 ];

@@ -348,7 +348,7 @@ module.exports = {
                 return mainDAO.findProjectsBy(+req.params.id);
             })
         }).then(function (userProjects) {
-            user.myProjcts = userProjects;
+            user.myProjects = userProjects;
             return Promise.map(userProjects, function (project) {
                 return redis.getAsync('p:' + project.id + ':pv').then(function (pv) {
                     project.pv = pv ? pv : 0;
@@ -363,7 +363,13 @@ module.exports = {
                 return redis.getAsync('p:' + project.id + ':pv').then(function (pv) {
                     project.pv = pv ? pv : 0;
                     if (project.tags) project.tags = project.tags.split(',');
-                    return project;
+                }).then(function (result) {
+                    return mainDAO.findProjectLikers(+project.id);
+                }).then(function (likers) {
+                    project.hasLiked = (_.findIndex(likers, function (liker) {
+                        return +liker.uid == req.user.id;
+                    }) > -1);
+                    project.likers = likers;
                 })
             }).then(function (result) {
                 return mainDAO.findLikeredProjesctsBy(+req.user.id);
@@ -404,7 +410,17 @@ module.exports = {
             return mainDAO.findProjectComments(p.id, {from: 0, size: 6});
         }).then(function (comments) {
             p.comments = comments;
-            res.send({ret: 0, data: p});
+            return redis.getAsync('p:' + p.id + ':pv').then(function (pv) {
+                p.pv = pv ? pv : 0;
+                return mainDAO.findProjectLikers(+p.id);
+            }).then(function (likers) {
+                p.hasLiked = (_.findIndex(likers, function (liker) {
+                    return +liker.uid == req.user.id;
+                }) > -1);
+                p.likers = likers;
+            }).then(function (result) {
+                res.send({ret: 0, data: p});
+            });
         }).catch(function (err) {
             res.send({ret: 1, data: err.message});
         });
@@ -537,6 +553,28 @@ module.exports = {
             res.send({ret: 1, message: err.message});
         });
         return next();
+    },
+    getVisitSummary: function (req, res, next) {
+        var data = {projectCount: 0, pvCount: 0, likerCount: 0, shareCount: 0};
+        mainDAO.findProjectsBy(+req.user.id).then(function (projects) {
+            data.latestProjects = projects;
+            data.projectCount = projects && projects.length > -1 ? projects.length : 0;
+            Promise.map(projects, function (project) {
+                return redis.getAsync('p:' + project.id + ':pv').then(function (pv) {
+                    project.pv = pv ? +pv : 0;
+                    project.shareCount = 0;
+                    data.pvCount += project.pv;
+                    data.likerCount += +project.likerCount;
+                    data.shareCount += +project.shareCount;
+                    return project;
+                });
+            }).then(function (result) {
+                data.hotestProjects = _.sortBy(data.latestProjects, function (p) {
+                    return p.pv + p.shareCount + p.likerCount;
+                });
+                res.send({ret: 0, data: data});
+            });
+        });
+        return next();
     }
-
 }
