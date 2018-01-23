@@ -4,15 +4,29 @@
 "use strict";
 var db = require('../common/db');
 var sqlMapping = require('./sqlMapping');
+var _ = require('lodash');
 
 module.exports = {
     insertProject: function (project) {
         return db.query(sqlMapping.project.insert, project);
     },
+    findWeChatUserByOpenId: function (openid) {
+        return db.query(sqlMapping.user.findByOpenId, openid);
+    },
     findLikersForProjects: function (uid, page) {
         return db.query(sqlMapping.project.findLikersByUid, [uid, +page.from, +page.size]);
-
     },
+    findLikersForProjectsBy: function (idList, page, conditions) {
+        var sql = sqlMapping.project.findLikersForProjectsBy;
+        if (idList.length > 1) sql += ' pid in (' + idList.join(',') + ')';
+        if (idList.length == 1) sql += ' pid = ' + idList;
+        if (conditions.length > 0) {
+            sql = sql + ' and ' + conditions.join(' and ')
+        }
+        sql = sql + ' limit ?,?';
+        return db.query(sql, [+page.from, +page.size]);
+    },
+
     findUsersByIds: function (idList) {
         var sql = sqlMapping.user.findByIds.replace(/\?/g, idList);
         return db.query(sql);
@@ -84,8 +98,8 @@ module.exports = {
     updateProject: function (p) {
         return db.query(sqlMapping.project.update, [p, p.id]);
     },
-    updateByDescField: function (p, updateField, value) {
-        return db.query('update project set ' + updateField + '=' + updateField + '+' + value + ' where id =' + p.id);
+    updateByDescField: function (tableName, p, updateField, value) {
+        return db.query('update ' + tableName + ' set ' + updateField + '=' + updateField + '+' + value + ' where id =' + p.id);
     },
 
     deleteProject: function (id) {
@@ -97,6 +111,10 @@ module.exports = {
     findProjectLikersBy: function (pid, uid) {
         return db.query(sqlMapping.project.findLikersBy, [pid, uid]);
     },
+    findProjectNewsLikersBy: function (pid, newsId, uid) {
+        return db.query(sqlMapping.project.findNewsLikersBy, [pid, newsId, uid]);
+    },
+
     findTeamStrengths: function (pid) {
         return db.query(sqlMapping.project.findTeamStrengths, pid);
     },
@@ -107,8 +125,17 @@ module.exports = {
     deleteProjectLiker: function (pid, uid) {
         return db.query(sqlMapping.project.deleteLiker, [uid, pid]);
     },
+    deleteProjectNewsLiker: function (pid, newsId, uid) {
+        return db.query(sqlMapping.project.deleteNewsLiker, [uid, pid, newsId]);
+    },
+    addProjectNewsLiker: function (liker) {
+        return db.query(sqlMapping.project.addNewsLiker, liker);
+    },
     addComment: function (comment) {
         return db.query(sqlMapping.project.addComment, comment);
+    },
+    addProjectNewsComment: function (comment) {
+        return db.query(sqlMapping.project.addNewsComment, comment);
     },
     findProjects: function (page) {
         return db.query(sqlMapping.project.find, [+page.from, +page.size]);
@@ -151,5 +178,32 @@ module.exports = {
     deleteGroup: function (projectId, tableName, group) {
         var sql = 'delete from ' + tableName + ' where pid=' + projectId + ' and `group` = \'' + group + '\'';
         return db.query(sql);
+    },
+    addProjectNews: function (news) {
+        return db.query(sqlMapping.project.addNews, news);
+    },
+    deleteProjectNews: function (id, newsId) {
+        return db.query(sqlMapping.project.deleteNews, [id, newsId]);
+    },
+    deleteProjectComment: function (pid, id) {
+        return db.query(sqlMapping.project.deleteComment, [pid, id]);
+    },
+    deleteProjectNewsComment: function (id, newsId, commentId) {
+        return db.query(sqlMapping.project.deleteNewsComment, [id, newsId, commentId]);
+    },
+    updateProjectNews: function (news) {
+        return db.query(sqlMapping.project.updateNews, [news, news.id]);
+    },
+    findProjectNews: function (pid) {
+        return db.query(sqlMapping.project.findNews, pid);
+    },
+    findProjectNewsComments: function (pid, newsId) {
+        return db.query(sqlMapping.project.findNewsComments, [pid, newsId]);
+    },
+    findProjectNewsLikers: function (pid, newsId) {
+        return db.query(sqlMapping.project.findNewsLikers, [pid, newsId]);
+    },
+    findPageSettingForProject: function (pid) {
+        return db.query(sqlMapping.project.findPageSetting, pid);
     }
 }

@@ -1,6 +1,8 @@
 var authController = require('./controller/authController');
 var mainController = require('./controller/mainController');
 var thirdPartyController = require('./controller/thirdPartyController');
+var projectController = require('./controller/projectController');
+var wechatController = require('./controller/wechatController');
 module.exports = [
     {
         method: "get",
@@ -18,6 +20,16 @@ module.exports = [
         handler: authController.login
     },
     {
+        method: "get",
+        path: "/api/wechat/login",
+        handler: wechatController.login
+    },
+    {
+        method: "get",
+        path: "/api/wechat/signature",
+        handler: wechatController.getWeChatSignature
+    },
+    {
         method: "post",
         path: "/api/logout",
         handler: authController.logout,
@@ -31,8 +43,7 @@ module.exports = [
     {
         method: "get",
         path: "/api/projectCategories",
-        handler: mainController.getProjectCategories,
-        secured: 'user'
+        handler: mainController.getProjectCategories
     },
     {
         method: "get",
@@ -137,6 +148,12 @@ module.exports = [
         secured: 'user'
     },
     {
+        method: "get",
+        path: "/api/projects/:id/pageSetting",
+        handler: projectController.getPageSettingForProject,
+        secured: 'user'
+    },
+    {
         method: "put",
         path: "/api/projects/:id/pageSetting",
         handler: mainController.updatePageSettingForProject,
@@ -156,32 +173,48 @@ module.exports = [
     },
     {
         method: "post",
+        path: "/api/projects/:id/news/:newsId/likers",
+        handler: projectController.likeProjectNews,
+        secured: 'user'
+    },
+    {
+        method: "post",
         path: "/api/projects/:id/comments",
         handler: mainController.commentProject,
         secured: 'user'
     },
     {
         method: "post",
-        path: "/api/projects/:id/pv",
-        handler: mainController.addPvOfProject,
+        path: "/api/projects/:id/comments/:commentId/likers",
+        handler: projectController.likeProjectComment,
+        secured: 'user'
+    },
+    {
+        method: "post",
+        path: "/api/projects/:id/news/:newsId/comments/:commentId/likers",
+        handler: projectController.likeProjectNewsComment,
         secured: 'user'
     },
     {
         method: "post",
         path: "/api/projects/:id/pv",
-        handler: mainController.addPvOfProject,
+        handler: mainController.addPvOfProject
+    },
+    {
+        method: "post",
+        path: "/api/projects/:id/news/:newsId/pv",
+        handler: projectController.addPvOfProjectNews,
         secured: 'user'
     },
     {
         method: "get",
         path: "/api/discovery",
-        handler: mainController.getDiscoveryItems,
-        secured: 'user'
+        handler: mainController.getDiscoveryItems
     },
     {
-        method: "get",
-        path: "/api/discovery",
-        handler: mainController.getDiscoveryItems,
+        method: "post",
+        path: "/api/projects/:id/news/:newsId/comments",
+        handler: projectController.commentProjectNews,
         secured: 'user'
     },
     {
@@ -193,8 +226,7 @@ module.exports = [
     {
         method: "get",
         path: "/api/users/:id",
-        handler: mainController.getUserInfo,
-        secured: 'user'
+        handler: mainController.getUserInfo
     },
     {
         method: "get",
@@ -203,10 +235,21 @@ module.exports = [
         secured: 'user'
     },
     {
+        method: "del",
+        path: "/api/projects/:id/comments/:commentId",
+        handler: projectController.removeProjectComment,
+        secured: 'user'
+    },
+    {
+        method: "del",
+        path: "/api/projects/:id/news/:newsId/comments/:commentId",
+        handler: projectController.removeProjectNewsComment,
+        secured: 'user'
+    },
+    {
         method: "get",
         path: "/api/projects/:id",
-        handler: mainController.getProjectInfo,
-        secured: 'user'
+        handler: mainController.getProjectInfo
     },
     {
         method: "post",
@@ -284,4 +327,35 @@ module.exports = [
         handler: mainController.getProjectFollowers,
         secured: 'user'
     },
+    {
+        method: "post",
+        path: "/api/projects/:id/news",
+        handler: projectController.addProjectNews,
+        secured: 'user'
+    },
+    {
+        method: "put",
+        path: "/api/projects/:id/news",
+        handler: projectController.updateProjectNews,
+        secured: 'user'
+    },
+    {
+        method: "del",
+        path: "/api/projects/:id/news/:newsId",
+        handler: projectController.removeProjectNews,
+        secured: 'user'
+    },
+    {
+        method: "get",
+        path: "/api/projects/:id/news",
+        handler: projectController.getProjectNews,
+        secured: 'user'
+    },
+    {
+        method: "get",
+        path: "/api/projects/:id/news/:newsId",
+        handler: projectController.getProjectNewsBy,
+        secured: 'user'
+    }
+
 ];

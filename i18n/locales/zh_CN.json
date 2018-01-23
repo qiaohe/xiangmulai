@@ -7,6 +7,6 @@
 	"member.update.success": "修改用户信息成功",
 	"access.not.authorized": "访问未授权",
 	"sms.code.invalid": "无效的验证码",
-	"user.mobile.exists": "手机号码已存在"
-
+	"user.mobile.exists": "手机号码已存在",
+	"sms.send.success": "sms.send.success"
 }

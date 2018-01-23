@@ -60,7 +60,7 @@ module.exports = {
     getMusicLib: function (req, res, next) {
         mainDAO.findMusicLib(req.query.keywords).then(function (songs) {
             var data = _.chain(songs).groupBy('category').map(function (value, key) {
-                return {'category:': {name: key, count: value.length}, data: value};
+                return {'category': {name: key, count: value.length}, data: value};
             }).value();
             res.send({ret: 0, data: data});
         }).catch(function (err) {
@@ -134,7 +134,7 @@ module.exports = {
         return next();
     },
     addPageSettingForProject: function (req, res, next) {
-        var pid = req.query.id;
+        var pid = +req.params.id;
         var pageSetting = _.assign(req.body, {createDate: new Date(), pid: pid, creator: req.user.id});
         mainDAO.insertPageSetting(pageSetting).then(function (result) {
             pageSetting.id = result.insertId;
@@ -237,7 +237,7 @@ module.exports = {
                 });
             });
         }).then(function (result) {
-            return mainDAO.updateByDescField({id: +req.params.id}, 'likerCount', liked ? -1 : 1);
+            return mainDAO.updateByDescField('project', {id: +req.params.id}, 'likerCount', liked ? -1 : 1);
         }).then(function (result) {
             res.send({ret: 0, data: {pid: +req.params.id, liked: !liked}})
         }).catch(function (err) {
@@ -266,7 +266,7 @@ module.exports = {
         });
         mainDAO.addComment(comment).then(function (result) {
             comment.id = result.insertId;
-            return mainDAO.updateByDescField({id: +req.params.id}, 'commentCount', 1);
+            return mainDAO.updateByDescField('project', {id: +req.params.id}, 'commentCount', 1);
         }).then(function (result) {
             res.send({ret: 0, data: comment});
         }).catch(function (err) {
@@ -291,7 +291,7 @@ module.exports = {
                     return mainDAO.findProjectLikers(+project.id);
                 }).then(function (likers) {
                     project.hasLiked = (_.findIndex(likers, function (liker) {
-                        return +liker.uid == req.user.id;
+                        return +liker.uid == req.user ? req.user.id : null;
                     }) > -1);
                     project.likers = likers;
                 });
@@ -322,7 +322,7 @@ module.exports = {
     },
 
     getUserInfo: function (req, res, next) {
-        var user = req.user;
+        var user = {};
         mainDAO.findUserById(+req.params.id).then(function (users) {
             if (users && users.length < 1) throw new Error('当前登录用户不存在。');
             user = users[0];
@@ -355,7 +355,7 @@ module.exports = {
                     return project;
                 })
             }).then(function (result) {
-                return mainDAO.findLikeredProjesctsBy(+req.user.id);
+                return mainDAO.findLikeredProjesctsBy(user.id);
             });
         }).then(function (likeredProjects) {
             user.likeredProjects = likeredProjects;
@@ -367,12 +367,10 @@ module.exports = {
                     return mainDAO.findProjectLikers(+project.id);
                 }).then(function (likers) {
                     project.hasLiked = (_.findIndex(likers, function (liker) {
-                        return +liker.uid == req.user.id;
+                        return +liker.uid == req.user ? req.user.id : null;
                     }) > -1);
                     project.likers = likers;
                 })
-            }).then(function (result) {
-                return mainDAO.findLikeredProjesctsBy(+req.user.id);
             }).then(function (result) {
                 res.send({ret: 0, data: user});
             });
@@ -415,7 +413,7 @@ module.exports = {
                 return mainDAO.findProjectLikers(+p.id);
             }).then(function (likers) {
                 p.hasLiked = (_.findIndex(likers, function (liker) {
-                    return +liker.uid == req.user.id;
+                    return +liker.uid == (req.user ? req.user.id : null);
                 }) > -1);
                 p.likers = likers;
             }).then(function (result) {
@@ -538,9 +536,11 @@ module.exports = {
             Promise.map(users, function (user) {
                 return redis.zrankAsync(['uid:' + uid + ':following', user.id]).then(function (result) {
                     user.hasFollowing = (result != null);
+                    return user;
                 })
+            }).then(function (result) {
+                res.send({ret: 0, data: users});
             });
-            res.send({ret: 0, data: users});
         }).catch(function (err) {
             res.send({ret: 1, message: err.message});
         });
@@ -557,6 +557,8 @@ module.exports = {
     getVisitSummary: function (req, res, next) {
         var data = {projectCount: 0, pvCount: 0, likerCount: 0, shareCount: 0};
         mainDAO.findProjectsBy(+req.user.id).then(function (projects) {
+            data.nickName = req.user.nickName;
+            data.headPic = req.user.headPic;
             data.latestProjects = projects;
             data.projectCount = projects && projects.length > -1 ? projects.length : 0;
             Promise.map(projects, function (project) {
@@ -572,6 +574,38 @@ module.exports = {
                 data.hotestProjects = _.sortBy(data.latestProjects, function (p) {
                     return p.pv + p.shareCount + p.likerCount;
                 });
+                res.send({ret: 0, data: data});
+            });
+        });
+        return next();
+    },
+    getProjectFollowers: function (req, res, next) {
+        var data = {projectCount: 0, likerCount: 0};
+        var conditions = [];
+        if (req.query.nickName) conditions.push('nickName like \'%' + req.query.nickName + '%\'');
+        mainDAO.findProjectsBy(+req.user.id).then(function (projects) {
+            data.myProjects = _.map(projects, function (p) {
+                data.likerCount += +p.likerCount;
+                return {id: p.id, name: p.name};
+            });
+            data.projectCount = projects && projects.length > -1 ? projects.length : 0;
+            var idList = _.map(projects, function (p) {
+                return p.id;
+            });
+            return mainDAO.findLikersForProjectsBy(req.query.pid ? [+req.query.pid] : idList, {
+                from: req.query.from,
+                size: req.query.size
+            }, conditions);
+        }).then(function (likers) {
+            data.followers = likers;
+            Promise.map(likers, function (like) {
+                return redis.zcardAsync('uid:' + like.uid + ':follower').then(function (reply) {
+                    like.followerCount = (reply == null ? 0 : +reply);
+                    return redis.zrankAsync(['uid:' + req.user.id + ':following', likers.uid])
+                }).then(function (hasFollowing) {
+                    like.hasFollowing = (hasFollowing != null);
+                })
+            }).then(function (result) {
                 res.send({ret: 0, data: data});
             });
         });

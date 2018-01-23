@@ -5,7 +5,8 @@ module.exports = {
         name: 'Xiang Mu Lai Server restful api',
         version: '0.0.1',
         host: '0.0.0.0',
-        port: 3000
+        domain: 'www.xiangmulai.com',
+        port: 3003
     },
     db: {
         host: '106.14.4.47',
@@ -31,22 +32,24 @@ module.exports = {
         apikey: '4bcdc43e035f37eb7d9b6b831f57ad99'
     },
     wechat: {
-        token: 'hisforce_wechat_token',
+        token: 'xianglulaitoken',
         appid: 'wx30f7e12d7d31f35b',
         expire_seconds_qrCode:315360000,
-        appsecret: '467732c9bddced3dd23d4a3c0bc282d7',
+        appsecret: '51d58a80a361cfcba755c9eeeed9906e',
+        getSignatureUrl: "jsapi_ticket=JSAPI_TICKET&noncestr=xiangmulai2018&timestamp=TIMESTAMP&url=http://www.xiangmulai.com/",
         accessTokenUrl: 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET',
         createMenu: 'https://api.weixin.qq.com/cgi-bin/menu/create?access_token=ACCESS_TOKEN',
-        getUserInfo: 'https://api.weixin.qq.com/cgi-bin/user/info?access_token=ACCESS_TOKEN&openid=OPENID&lang=zh_CN',
+        getJsApiToken: "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=jsapi",
+        getUserInfo: 'https://api.weixin.qq.com/sns/userinfo?access_token=ACCESS_TOKEN&openid=OPENID&lang=zh_CN',
         createQrCode: 'https://api.weixin.qq.com/cgi-bin/qrcode/create?access_token=TOKEN',
         ticketUrl: 'https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=TOKEN&type=jsapi',
         bindPhoneNumberPage: 'http://angelguider.hisforce.cn/pages/bindPhoneNumber/bindPhoneNumber.html',
-        authorizeUrlTemplate: "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx30f7e12d7d31f35b&redirect_uri=REDIRECT_URI&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect",
-        accessTokenUrlTemplateByPage: "https://api.weixin.qq.com/sns/oauth2/access_token?appid=wx30f7e12d7d31f35b&secret=467732c9bddced3dd23d4a3c0bc282d7&code=CODE&grant_type=authorization_code",
-        noncestr: 'xmyD!@001ync',
+        authorizeUrlTemplate: "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx30f7e12d7d31f35b&redirect_uri=REDIRECT_URI&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect",
+        accessTokenUrlTemplateByPage: "https://api.weixin.qq.com/sns/oauth2/access_token?appid=wx30f7e12d7d31f35b&secret=51d58a80a361cfcba755c9eeeed9906e&code=CODE&grant_type=authorization_code",
+        noncestr: 'xiangmulai2018',
         downloadUrl: "http://file.api.weixin.qq.com/cgi-bin/media/get?access_token=ACCESS_TOKEN&media_id=MEDIA_ID",
         getRefreshTokenUrl: "https://api.weixin.qq.com/sns/oauth2/refresh_token?appid=wx30f7e12d7d31f35b&grant_type=refresh_token&refresh_token=REFRESH_TOKEN",
-        getAccessTokenUrl: "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx30f7e12d7d31f35b&secret=467732c9bddced3dd23d4a3c0bc282d7",
+        getAccessTokenUrl: "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx30f7e12d7d31f35b&secret=51d58a80a361cfcba755c9eeeed9906e",
     },
     redis: {
         host: '127.0.0.1',
